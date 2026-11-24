@@ -1,0 +1,111 @@
+# Example application.properties for different Kafka configurations
+
+# ============================================================
+# CONFIGURATION 1: Local Kafka without Authentication
+# ============================================================
+# spring.kafka.bootstrap-servers=localhost:9092
+# kafka.topic.name=my-topic
+# spring.kafka.producer.acks=all
+# spring.kafka.producer.retries=3
+
+# ============================================================
+# CONFIGURATION 2: Confluent Cloud (with SASL/PLAIN)
+# ============================================================
+# spring.kafka.bootstrap-servers=pkc-xxx.us-east-1.provider.confluent.cloud:9092
+# spring.kafka.properties.security.protocol=SASL_SSL
+# spring.kafka.properties.sasl.mechanism=PLAIN
+# spring.kafka.properties.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="your_api_key" password="your_api_secret";
+# kafka.topic.name=my-topic
+
+# ============================================================
+# CONFIGURATION 3: AWS MSK with IAM Authentication
+# ============================================================
+# spring.kafka.bootstrap-servers=b-1.cluster.xxx.kafka.us-east-1.amazonaws.com:9092
+# spring.kafka.properties.security.protocol=SASL_SSL
+# spring.kafka.properties.sasl.mechanism=SCRAM-SHA-512
+# spring.kafka.properties.sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="user" password="pass";
+# spring.kafka.properties.ssl.truststore.location=file:/etc/kafka/secrets/kafka.client.truststore.jks
+# spring.kafka.properties.ssl.truststore.password=password
+# kafka.topic.name=my-topic
+
+# ============================================================
+# CONFIGURATION 4: Self-Hosted Kafka with SASL/PLAIN + SSL
+# (RECOMMENDED FOR PRODUCTION)
+# ============================================================
+spring.application.name=kafka-producer-app
+server.port=8080
+
+# Broker Configuration
+spring.kafka.bootstrap-servers=kafka.example.com:9093
+kafka.topic.name=production-topic
+
+# Security: SASL/PLAIN with SSL/TLS
+spring.kafka.properties.security.protocol=SASL_SSL
+spring.kafka.properties.sasl.mechanism=PLAIN
+spring.kafka.properties.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="${KAFKA_USERNAME}" password="${KAFKA_PASSWORD}";
+
+# SSL/TLS Configuration
+spring.kafka.properties.ssl.truststore.location=file:/var/kafka/secrets/truststore.jks
+spring.kafka.properties.ssl.truststore.password=${SSL_TRUSTSTORE_PASSWORD}
+spring.kafka.properties.ssl.keystore.location=file:/var/kafka/secrets/keystore.jks
+spring.kafka.properties.ssl.keystore.password=${SSL_KEYSTORE_PASSWORD}
+spring.kafka.properties.ssl.key.password=${SSL_KEY_PASSWORD}
+
+# Producer Configuration
+spring.kafka.producer.acks=all
+spring.kafka.producer.retries=3
+spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
+spring.kafka.producer.value-serializer=org.apache.kafka.common.serialization.StringSerializer
+spring.kafka.producer.compression-type=snappy
+spring.kafka.producer.properties.linger.ms=10
+spring.kafka.producer.properties.batch.size=16384
+spring.kafka.producer.properties.request.timeout.ms=30000
+
+# Request/Response Timeout
+spring.kafka.producer.properties.delivery.timeout.ms=120000
+
+# Logging
+logging.level.root=INFO
+logging.level.com.example.kafka=DEBUG
+logging.level.org.springframework.kafka=DEBUG
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+
+# ============================================================
+# CONFIGURATION 5: AWS MSK with SASL/SCRAM + SSL
+# ============================================================
+# spring.kafka.bootstrap-servers=b-1.mycluster.xxxxx.kafka.us-east-1.amazonaws.com:9092
+# spring.kafka.properties.security.protocol=SASL_SSL
+# spring.kafka.properties.sasl.mechanism=SCRAM-SHA-512
+# spring.kafka.properties.sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="mskuser" password="mskpassword";
+# spring.kafka.properties.ssl.truststore.location=file:/var/secrets/AmazonRootCA1.pem
+# kafka.topic.name=msk-topic
+
+# ============================================================
+# CONFIGURATION 6: Azure Event Hubs (Kafka Protocol)
+# ============================================================
+# spring.kafka.bootstrap-servers=mynamespace.servicebus.windows.net:9093
+# spring.kafka.properties.security.protocol=SASL_SSL
+# spring.kafka.properties.sasl.mechanism=PLAIN
+# spring.kafka.properties.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="Endpoint=sb://mynamespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=...";
+# kafka.topic.name=my-event-hub-topic
+
+# ============================================================
+# CLIENT SETTINGS FOR DIFFERENT USE CASES
+# ============================================================
+
+# HIGH THROUGHPUT
+# spring.kafka.producer.acks=1
+# spring.kafka.producer.properties.linger.ms=50
+# spring.kafka.producer.properties.batch.size=32768
+# spring.kafka.producer.compression-type=lz4
+
+# HIGH DURABILITY
+# spring.kafka.producer.acks=all
+# spring.kafka.producer.retries=5
+# spring.kafka.producer.properties.min.insync.replicas=2
+# spring.kafka.producer.properties.delivery.timeout.ms=180000
+
+# LOW LATENCY
+# spring.kafka.producer.acks=1
+# spring.kafka.producer.properties.linger.ms=0
+# spring.kafka.producer.properties.batch.size=1024

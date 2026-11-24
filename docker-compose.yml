@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # Zookeeper - Required for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - kafka-network
+
+  # Kafka Broker with SASL/PLAIN Authentication
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      
+      # Advertised listeners for different protocols
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,SASL_PLAINTEXT://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      
+      # SASL/PLAIN Configuration
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      
+      # JAAS Configuration for broker
+      KAFKA_BROKER_RACK: rack1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
+      
+      # Custom authentication handler
+      KAFKA_LISTENER_NAME_SASL_PLAINTEXT_SASL_SERVER_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.plain.PlainSaslServerCallbackHandler
+      
+      # Simple auth file for testing (map username:password)
+      # In production, use proper authentication backend
+    volumes:
+      - ./kafka-auth-config.txt:/etc/kafka/secrets/kafka-auth-config.txt
+      - ./kafka-server-jaas.conf:/etc/kafka/secrets/kafka-server-jaas.conf
+    environment:
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/secrets/kafka-server-jaas.conf"
+    networks:
+      - kafka-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Kafka UI for monitoring (optional)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      KAFKA_CLUSTERS_0_SASL_ENABLED: "true"
+      KAFKA_CLUSTERS_0_SASL_MECHANISM: PLAIN
+      KAFKA_CLUSTERS_0_SASL_USERNAME: producer
+      KAFKA_CLUSTERS_0_SASL_PASSWORD: producer-secret
+    networks:
+      - kafka-network
+
+networks:
+  kafka-network:
+    driver: bridge
